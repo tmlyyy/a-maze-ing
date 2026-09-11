@@ -1,0 +1,12 @@
+# Configuração do padrão labirinto:
+WIDTH=20
+HEIGHT=15
+ENTRY=0,0
+EXIT=19,14
+OUT_FILE=maze.txt
+PERFECT=True
+
+# Chaves extras:
+SEED=42
+ALGORITHM=backtracking
+DISPLAY=ascii
