@@ -55,4 +55,52 @@ class MazeGenerator:
 				grid[y][x] &= ~SOUTH
 
 		return grid
-        
+    
+    def _carve_perfect_maze(self)
+	    visited = set()
+
+        def carve(x, y):
+            visited.add((x, y))
+            directions = [NORTH, EAST, SOUTH, WEST]
+            self._rng.shuffle(directions)
+
+            for wall in directions:
+                    dx, dy = DELTA[wall]
+                    nx, ny = x + dx, y + dy
+                    if 0 <= nx < self.width and 0 <= ny < self.height and (nx, ny) not in visited:
+                        self.grid[y][x] &= ~wall
+                        self.grid[ny][nx] &= ~OPPOSITE[wall]
+                        carve(nx, ny)
+	
+	carve(*self.entry)
+
+    def _insert_42_pattern(self):
+		pattern_w = 7
+		pattern_h = 5
+
+		if self.width < pattern_w + 2 or self.height < pattern_h + 2:
+			print("Erro: Labirinto pequeno demais para o padrão '42'.")
+			return
+
+		origin_x = (self.width - pattern_w) // 2
+		origin_y = (self.height - pattern_h) // 2
+	    
+
+		closed_cells = self._get_42_shape(origin_x, origin_y)
+
+		for (x, y) in closed_cells:
+			self.grid[y][x] = NORTH | EAST | SOUTH | WEST
+			
+			for wall in (NORTH, EAST, SOUTH, WEST):
+				dx = DELTA[wall]
+				dy = DELTA[wall]
+				nx = x + dx
+				ny = y + dy
+				if 0 <= nx < self.width and 0 < ny < self.height:
+					self.grid[ny][nx] |= OPPOSITE[wall]
+
+	def _add_loops(self):
+		corners = [(0, 0), (self.width - 1, 0), (0, self.height - 1), (self.width - 1, self.height - 1)]
+		center = (self.width // 2, self.height // 2)
+		for (x, y) in corners + [center]:
+			self._force_open(x, y)
