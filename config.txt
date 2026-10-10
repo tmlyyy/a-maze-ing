@@ -1,12 +1,8 @@
-# Configuração do padrão labirinto:
+# Configuracao padrao. Coordenadas no formato x,y.
 WIDTH=20
 HEIGHT=15
 ENTRY=0,0
 EXIT=19,14
 OUTPUT_FILE=maze.txt
-PERFECT=True
-
-# Chaves extras:
+PERFECT=False
 SEED=42
-ALGORITHM=backtracking
-DISPLAY=ascii
