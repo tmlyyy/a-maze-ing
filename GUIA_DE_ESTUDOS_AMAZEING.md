@@ -1,6 +1,6 @@
 # Guia de estudos A-Maze-ing — Thamily e Guilherme
 
-Este guia é pessoal para estudar o código final. Os arquivos da entrega são o programa, a configuração, o pacote `mazegen`, o wheel, `README.md`, `LICENSE.md`, `Makefile`, `pyproject.toml` e `.gitignore`. Este guia não substitui o README nem o subject.
+Este guia é pessoal para estudar o código final. Os arquivos da entrega são o programa e seus três módulos de interface, a configuração, o pacote `mazegen`, o wheel, `README.md`, `LICENSE.md`, `Makefile`, `pyproject.toml` e `.gitignore`. Este guia não substitui o README nem o subject.
 
 ## O que o subject v2.2 pede
 
@@ -42,7 +42,10 @@ Com `PERFECT=True`, o DFS deixa uma árvore: nenhum ciclo, embora haja várias p
 ## Papel de cada arquivo e fluxo
 
 - `config.txt`: valores usados no exemplo padrão.
-- `a_maze_ing.py`: lê/valida configuração, chama o gerador, exporta, desenha ASCII e executa o menu.
+- `a_maze_ing.py`: `main()` trata erros; `run()` coordena geração, exportação, tela e menu.
+- `config_parser.py`: `read_config()` lê o arquivo; `parse_point()` interpreta coordenadas; `make_generator()` converte os valores e cria o gerador.
+- `maze_exporter.py`: `directions()` converte o caminho para N/E/S/W; `export_maze()` escreve o arquivo.
+- `maze_renderer.py`: `render()` desenha a tela; contém paletas e constantes visuais.
 - `mazegen/generator.py`: classe única de geração; valida dimensões, escolhe o padrão, gera a árvore e abre rotas extras.
 - `mazegen/solver.py`: BFS do menor caminho.
 - `mazegen/__init__.py`: API pública e exemplo reutilizável.
@@ -50,9 +53,31 @@ Com `PERFECT=True`, o DFS deixa uma árvore: nenhum ciclo, embora haja várias p
 - `Makefile`: install, run, debug, clean, lint e lint-strict.
 - `README.md`: documentação oficial da entrega, recursos, equipe e execução.
 - `LICENSE.md`: licença MIT para reutilização e distribuição.
-- `.gitignore` e `.flake8`: exclusões e configuração das ferramentas.
+- `.gitignore`: exclusões de caches, ambientes e artefatos locais.
 
-Fluxo: `main()` verifica argumento -> `read_config()` lê pares -> `make_generator()` converte tipos -> `generate()` monta a matriz -> `solve()` encontra caminho -> `export_maze()` escreve hex, linha vazia, entrada, saída, direções -> `render()` mostra a tela -> menu altera geração, caminho ou cor.
+Fluxo: `main()` em `a_maze_ing.py` verifica o argumento e chama `run()` -> `read_config()` e `make_generator()` em `config_parser.py` leem e convertem a configuração -> `generate()` e `solve()` em `mazegen` geram e resolvem -> `export_maze()` em `maze_exporter.py` escreve hex, linha vazia, entrada, saída e direções -> `render()` em `maze_renderer.py` monta a tela -> o menu em `run()` responde às opções.
+
+### Por que separar e como os imports funcionam
+
+O arquivo principal importa funções de configuração, exportação e renderização. Cada módulo da interface importa `MazeGenerator` de `mazegen`, sem importar o principal nem outro módulo da interface. Dentro do pacote, `__init__.py` expõe a classe de `generator.py`, que importa `shortest_path()` de `solver.py`. Não existe caminho de volta da geração para a interface, nem import circular.
+
+Separar por responsabilidade permite encontrar cada etapa sem percorrer o menu: configuração interpreta a entrada, exportação grava a saída, renderização monta o texto, e o principal coordena. Não criamos novas classes nem mudamos a API do pacote. O alias `Point = tuple[int, int]` apenas dá um nome ao tipo de coordenada; cada módulo que precisa dele o declara localmente.
+
+O wheel inclui somente `mazegen`, conforme `packages = ["mazegen"]` em `pyproject.toml`. Para executar a interface em outra pasta, copie `a_maze_ing.py`, `config_parser.py`, `maze_exporter.py` e `maze_renderer.py` juntos e instale o wheel no Python escolhido.
+
+## Como o renderizador desenha a tela
+
+`render()` em `maze_renderer.py` apenas lê `grid[y][x]` e as coordenadas retornadas pelo BFS. Não altera a matriz nem a exportação. Cada célula ocupa quatro colunas por duas linhas de texto. A tela tem `2 * HEIGHT + 1` linhas e `4 * WIDTH + 1` colunas, mais a legenda. O centro de `(x, y)` fica na coluna `4*x+2`, linha `2*y+1`.
+
+`walls` e `route` são duas matrizes auxiliares usadas apenas para desenhar. A primeira guarda os segmentos das paredes; a segunda, os segmentos do caminho. A função interna `connect()` liga duas posições horizontais ou verticais. Em cada posição, guarda os bits N=1, E=2, S=4 e W=8 das direções dos segmentos. Uma posição ligada ao norte e ao leste, por exemplo, guarda 3. A tabela `GLYPHS` traduz esses valores em paredes Unicode espessas, como `━`, `┃` e `┗`.
+
+O caminho liga os centros de células consecutivas retornadas pelo BFS, incluindo as posições intermediárias nas passagens abertas. Antes de ligar, o código confere vizinhança, parede aberta e ausência de células do “42”. Nos segmentos de `route`, desenha bolinhas `●` apenas nas colunas pares: uma a cada duas colunas na horizontal ou uma linha na vertical. Esse espaçamento equilibra a distância visual dos pontos em uma fonte monoespaçada típica, nas retas e nas curvas. Quando `show_path` é falso, `route` fica vazia.
+
+Cada célula reservada do “42” vira três bolinhas `●●●` na linha do centro, nas colunas `4*x+1`, `4*x+2` e `4*x+3`. Não desenhamos caixas de paredes entre essas células reservadas; as bolinhas preservam o desenho original de 8×5 células e seus espaços internos. Ao compor o texto, a função aplica as paredes ou o caminho, depois as bolinhas do “42” e por último os marcadores da entrada e da saída.
+
+Tudo usa cor do texto (foreground); o fundo do terminal fica intacto. A opção `3` alterna **branco → vermelho → azul → rosa → branco**. O caminho e o “42” usam o mesmo tom mais claro da paleta. A entrada é sempre uma bolinha verde; a saída, uma bolinha vermelha. A legenda identifica os dois pontos. A opção `2` oculta/restaura somente o caminho, preservando paredes, “42” e marcadores. A opção `1` continua gerando outro mapa.
+
+As cores RGB são explícitas para reduzir a variação entre temas de terminal. Fonte, tamanho e espaçamento ainda podem mudar a aparência. Sem ANSI (saída redirecionada, `TERM=dumb`, `TERM=unknown` ou `NO_COLOR`), usamos paredes `-`, `|`, `+`, pontos `.` para o caminho, `ooo` por célula do “42” e marcadores `E`/`X`, sem códigos de cor. Terminais sem codificação UTF também usam esses símbolos ASCII. A composição mantém posições fixas em todas as paletas.
 
 ## Executar e verificar
 
@@ -110,7 +135,7 @@ Com 20x15 e seed 42, os relatórios conferidos mostraram zero ciclos no perfeito
 
 Compare o primeiro mapa com as linhas hexadecimais: os bits devem reproduzir as mesmas paredes. Siga os passos N/E/S/W da entrada à saída; cada passo precisa atravessar uma parede aberta. A quantidade de passos precisa ser a menor distância, conferida por BFS.
 
-Use `2` duas vezes para ocultar e restaurar o caminho; `3` para trocar a cor das paredes em um terminal ANSI; `1` para gerar novamente. A regeneração recalcula o BFS e atualiza o arquivo. Iniciar outra execução com a seed original repete o primeiro mapa.
+Use `2` duas vezes para ocultar e restaurar o caminho; `3` quatro vezes para conferir branco → vermelho → azul → rosa → branco e as bolinhas do caminho e do “42” no mesmo tom mais claro, mantendo a entrada verde e a saída vermelha; `1` para gerar novamente. A regeneração recalcula o BFS e atualiza o arquivo. Iniciar outra execução com a seed original repete o primeiro mapa.
 
 Em cópias temporárias, o avaliador pode remover qualquer chave obrigatória, escrever uma linha sem `=`, trocar números por letras, usar `PERFECT=Maybe` ou escrever `ENTRY=1;2` e `EXIT=1,2,3`. O programa informa `Erro: ...` e termina com código 1, sem traceback. Esse encerramento é controlado. Teste também coordenadas fora da grade ou entrada igual à saída.
 
@@ -126,12 +151,13 @@ python3 -m venv "$AMAZEING_REVIEW_DIR/build-env"
 "$AMAZEING_REVIEW_DIR/build-env/bin/python" -m pip wheel . --no-deps --no-build-isolation -w "$AMAZEING_REVIEW_DIR/dist"
 python3 -m venv "$AMAZEING_REVIEW_DIR/install-env"
 "$AMAZEING_REVIEW_DIR/install-env/bin/python" -m pip install "$AMAZEING_REVIEW_DIR/dist/mazegen-1.0.0-py3-none-any.whl"
-cp a_maze_ing.py "$AMAZEING_REVIEW_DIR/a_maze_ing.py"
+mkdir -p "$AMAZEING_REVIEW_DIR/interface"
+cp a_maze_ing.py config_parser.py maze_exporter.py maze_renderer.py "$AMAZEING_REVIEW_DIR/interface/"
 "$AMAZEING_REVIEW_DIR/install-env/bin/python" -I -c 'from mazegen import MazeGenerator; m = MazeGenerator(20, 15, (0, 0), (19, 14), seed=42); m.generate(); print(m.solve())'
-"$AMAZEING_REVIEW_DIR/install-env/bin/python" -I "$AMAZEING_REVIEW_DIR/a_maze_ing.py" "$AMAZEING_REVIEW_DIR/standard.cfg"
+"$AMAZEING_REVIEW_DIR/install-env/bin/python" "$AMAZEING_REVIEW_DIR/interface/a_maze_ing.py" "$AMAZEING_REVIEW_DIR/standard.cfg"
 ```
 
-A cópia do programa e `-I` evitam importar por engano o pacote da pasta do repositório. O teste deve usar o pacote realmente instalado. Depois de qualquer alteração em `mazegen` ou nos metadados, reconstrua o wheel entregue na raiz.
+A opção `-I` no teste da API evita importar o pacote da pasta do repositório. No teste da interface, a pasta temporária contém os quatro módulos, mas não contém uma pasta `mazegen`; por isso ela importa o pacote instalado. Não usamos `-I` nessa execução, pois ele também impediria os imports dos módulos vizinhos da interface. Confira `mazegen.__file__` no ambiente instalado: deve apontar para `site-packages`. Depois de qualquer alteração em `mazegen` ou nos metadados, reconstrua o wheel entregue na raiz.
 
 Para explicar oralmente: o DFS usa uma pilha para ligar células novas e formar a árvore; o BFS usa uma fila para encontrar a saída pelo menor número de passos; os quatro bits guardam as paredes em um único número. O “42” é reservado antes de cavar os corredores. Abrir uma parede entre corredores já conectados cria um ciclo; um corredor com uma única passagem é um beco. As aberturas extras reduzem becos, criam alternativas e são recusadas se formarem uma área 3x3 totalmente aberta.
 
@@ -155,4 +181,4 @@ Para explicar oralmente: o DFS usa uma pilha para ligar células novas e formar 
 
 **Qual arquivo é importado por outro projeto?** O wheel instala `mazegen`; `from mazegen import MazeGenerator` dá acesso a `generate()`, `get_structure()` e `solve()` sem depender do programa de terminal.
 
-**O que acontece com entrada inválida?** O parser e a classe lançam `ValueError`; `main()` captura e imprime `Erro: ...` sem traceback esperado.
+**O que acontece com entrada inválida?** O parser em `config_parser.py` e a classe em `mazegen/generator.py` lançam `ValueError`; `main()` captura e imprime `Erro: ...` sem traceback esperado.
