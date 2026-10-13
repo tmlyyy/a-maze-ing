@@ -26,23 +26,23 @@ class MazeGenerator:
                  perfect: bool = False) -> None:
         """Validate dimensions and save generation options."""
         if not isinstance(width, int) or isinstance(width, bool) or width < 2:
-            raise ValueError("WIDTH deve ser inteiro maior ou igual a 2")
+            raise ValueError("WIDTH must be an integer of at least 2")
         if (not isinstance(height, int) or isinstance(height, bool) or
                 height < 2):
-            raise ValueError("HEIGHT deve ser inteiro maior ou igual a 2")
+            raise ValueError("HEIGHT must be an integer of at least 2")
         for name, point in (("ENTRY", entry), ("EXIT", exit)):
             if (not isinstance(point, tuple) or len(point) != 2 or
                     any(not isinstance(v, int) or isinstance(v, bool)
                         for v in point) or
                     not (0 <= point[0] < width and 0 <= point[1] < height)):
-                raise ValueError(f"{name} deve estar dentro do labirinto")
+                raise ValueError(f"{name} must be inside the maze")
         if entry == exit:
-            raise ValueError("ENTRY e EXIT devem ser diferentes")
+            raise ValueError("ENTRY and EXIT must be different")
         if seed is not None and (not isinstance(seed, int) or
                                  isinstance(seed, bool)):
-            raise ValueError("SEED deve ser inteiro")
+            raise ValueError("SEED must be an integer")
         if not isinstance(perfect, bool):
-            raise ValueError("PERFECT deve ser True ou False")
+            raise ValueError("PERFECT must be True or False")
         self.width = width
         self.height = height
         self.entry = entry
@@ -132,7 +132,7 @@ class MazeGenerator:
             seen.add(other)
             stack.append(other)
         if len(seen) != self.width * self.height - len(self.pattern):
-            raise ValueError("Nao foi possivel conectar todos os corredores")
+            raise ValueError("Could not connect all corridors")
 
     def _degree(self, point: Point) -> int:
         """Count open passages around a corridor."""
@@ -197,7 +197,7 @@ class MazeGenerator:
                 extra += 1
         if extra < 2:
             raise ValueError(
-                "Dimensoes pequenas para dois ciclos no modo padrao")
+                "Maze dimensions are too small for two loops in default mode")
 
     def generate(self) -> list[list[int]]:
         """Generate and return the wall matrix."""
@@ -213,11 +213,11 @@ class MazeGenerator:
     def solve(self) -> list[Point]:
         """Return the shortest entry-to-exit path using BFS."""
         if not self.grid:
-            raise ValueError("Chame generate() antes de solve()")
+            raise ValueError("Call generate() before solve()")
         return shortest_path(self.grid, self.entry, self.exit)
 
     def get_structure(self) -> list[list[int]]:
         """Return the generated wall matrix."""
         if not self.grid:
-            raise ValueError("Chame generate() antes de get_structure()")
+            raise ValueError("Call generate() before get_structure()")
         return self.grid

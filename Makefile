@@ -1,7 +1,11 @@
 .PHONY: install run debug clean lint lint-strict
 
+PYTHON := $(shell python3 -c 'import sys; print(sys.executable)')
+USER_BIN := $(shell $(PYTHON) -m site --user-base)/bin
+export PATH := $(PATH):$(USER_BIN)
+
 install:
-	python3 -m pip install .
+	$(PYTHON) -m pip install . flake8 mypy
 
 run:
 	python3 a_maze_ing.py config.txt

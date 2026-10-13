@@ -45,26 +45,29 @@ bolinhas claras; isso não muda a matriz nem a exportação.
 ### Requisitos e execução
 
 - Python **3.10 ou posterior** e `pip` para instalar/construir o pacote.
-- `flake8` e `mypy` para as verificações de código.
+- `make install` instala `flake8` e `mypy` para as verificações de código.
 - Terminal com ANSI e UTF para o visual colorido; há alternativa ASCII.
 - A execução usa apenas a biblioteca padrão e o pacote local `mazegen`.
 
 Na raiz do repositório:
 
 ```sh
-python3 -m venv .venv
-. .venv/bin/activate
-python3 -m pip install flake8 mypy setuptools wheel
 make install
+make lint
 python3 a_maze_ing.py config.txt
 ```
 
-`make install` instala o pacote `mazegen`. Os módulos da interface continuam
-na pasta do projeto, de onde o comando principal deve ser executado.
+`make install` instala o pacote `mazegen`, `flake8` e `mypy`. Ele usa o
+interpretador Python real para evitar a tentativa de atualizar shims do
+`pyenv` sem permissão. O Makefile também inclui o diretório de executáveis
+do usuário no `PATH`, onde o `pip` pode instalar `mypy`. Os módulos da
+interface continuam na pasta do projeto, de onde o comando principal deve
+ser executado. Se usar um ambiente virtual, crie-o fora da raiz do projeto,
+pois `flake8 .` percorre diretórios dentro dela.
 
 | Comando real do Makefile | O que faz |
 | --- | --- |
-| `make install` | Executa `python3 -m pip install .`. |
+| `make install` | Instala o pacote e as ferramentas `flake8` e `mypy` com o Python ativo. |
 | `make run` | Executa o programa com `config.txt`. |
 | `make debug` | Abre o programa com o depurador `pdb`. |
 | `make clean` | Remove diretórios `__pycache__`, `.mypy_cache` e `.pytest_cache`. |
@@ -107,7 +110,7 @@ SEED=42
 ```
 
 Arquivo ausente, linha sem `=`, valores inválidos, coordenadas impossíveis e
-falhas de escrita geram mensagens claras. O programa termina com código 1
+falhas de escrita geram mensagens claras em inglês. O programa termina com código 1
 nesses erros, sem traceback esperado.
 
 ### Coordenadas e seed
@@ -248,21 +251,29 @@ retorna a matriz de inteiros; `get_structure()` acessa a estrutura gerada, e
 `solve()` retorna coordenadas `(x, y)`. Chame `generate()` antes de acessar a
 estrutura ou resolver.
 
-### Construir e instalar
+### Reconstruir e testar em dois ambientes
 
-Com o ambiente virtual ativo e `setuptools`/`wheel` instalados:
+Execute os comandos abaixo na raiz do projeto. O primeiro ambiente reconstrói
+o wheel; o segundo instala esse arquivo e executa a aplicação. Eles ficam fora
+do repositório e não precisam ser ativados:
 
 ```sh
-python3 -m pip wheel . --no-deps --no-build-isolation -w .
-python3 -m venv /tmp/venv-amazeing
-/tmp/venv-amazeing/bin/python -m pip install ./mazegen-1.0.0-py3-none-any.whl
-/tmp/venv-amazeing/bin/python -I -c 'from mazegen import MazeGenerator; m = MazeGenerator(20, 15, (0, 0), (19, 14), seed=42); m.generate(); print(m.solve())'
+python3 -m venv ../amz-build-env ../amz-test-env
+../amz-build-env/bin/python -m pip wheel . --no-deps -w .
+../amz-test-env/bin/python -m pip install --no-deps --force-reinstall ./mazegen-1.0.0-py3-none-any.whl
+mkdir -p ../amz-test-app
+cp a_maze_ing.py config_parser.py maze_exporter.py maze_renderer.py config.txt ../amz-test-app/
+cd ../amz-test-app
+../amz-test-env/bin/python -c 'import mazegen; print(mazegen.__file__)'
+../amz-test-env/bin/python a_maze_ing.py config.txt
 ```
 
-O wheel contém o pacote e seus metadados, incluindo o README. Os quatro
-módulos da interface permanecem no repositório; para executar a interface
-com o pacote instalado em outro local, copie esses quatro arquivos juntos.
-Reconstrua o wheel após alterar o pacote ou seus metadados.
+O caminho impresso deve conter `amz-test-env`, confirmando que `mazegen` veio
+do wheel instalado. No menu, digite `4` para sair. A pasta `amz-test-app` tem
+apenas os arquivos da interface e a configuração; assim, não há uma cópia local
+de `mazegen` que possa esconder o pacote instalado. O wheel contém o gerador e
+seus metadados, incluindo o README. Reconstrua-o após alterar o pacote ou seus
+metadados.
 
 ## Equipe e organização do trabalho
 
@@ -277,6 +288,11 @@ representação das paredes e a API do gerador. A interface passou por ajustes
 visuais; depois, suas responsabilidades foram separadas em módulos para
 facilitar leitura e estudo. Essa divisão inicial não identifica a autoria
 individual de cada trecho final.
+
+Funcionou bem manter a geração e a solução no pacote independente e validar
+os dois modos com o analisador fornecido. Poderíamos ter definido as
+coordenadas, os bits das paredes e a API comum antes das partes paralelas;
+isso teria reduzido o retrabalho durante a integração.
 
 Ferramentas utilizadas: Python, Git, VS Code, `flake8`, `mypy`,
 `pip`, ambientes virtuais e o analisador oficial.

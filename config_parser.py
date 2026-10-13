@@ -9,15 +9,15 @@ def parse_point(value: str, key: str) -> Point:
     """Parse a coordinate in x,y format."""
     parts = value.split(",")
     if len(parts) != 2:
-        raise ValueError(f"{key} deve ter formato x,y")
+        raise ValueError(f"{key} must use x,y format")
     try:
         return int(parts[0].strip()), int(parts[1].strip())
     except ValueError as error:
-        raise ValueError(f"{key} deve conter dois inteiros") from error
+        raise ValueError(f"{key} must contain two integers") from error
 
 
 def read_config(path: str) -> dict[str, str]:
-    """Read required KEY=VALUE lines and reject malformed settings."""
+    """Read KEY=VALUE lines and reject invalid settings."""
     allowed = {"WIDTH", "HEIGHT", "ENTRY", "EXIT", "OUTPUT_FILE",
                "PERFECT", "SEED"}
     config: dict[str, str] = {}
@@ -28,35 +28,35 @@ def read_config(path: str) -> dict[str, str]:
                 if not line or line.startswith("#"):
                     continue
                 if "=" not in line:
-                    raise ValueError(f"Linha {number}: esperado KEY=VALUE")
+                    raise ValueError(f"Line {number}: expected KEY=VALUE")
                 key, value = (part.strip() for part in line.split("=", 1))
                 if key not in allowed:
                     raise ValueError(
-                        f"Linha {number}: chave desconhecida {key!r}")
+                        f"Line {number}: unknown key {key!r}")
                 if key in config:
-                    raise ValueError(f"Linha {number}: chave repetida {key}")
+                    raise ValueError(f"Line {number}: duplicate key {key}")
                 if not value:
-                    raise ValueError(f"Linha {number}: {key} esta vazio")
+                    raise ValueError(f"Line {number}: {key} cannot be empty")
                 config[key] = value
     except OSError as error:
-        raise ValueError(f"Nao foi possivel ler {path}: {error}") from error
+        raise ValueError(f"Could not read {path}: {error}") from error
     missing = allowed - {"SEED"} - config.keys()
     if missing:
-        raise ValueError("Faltam chaves obrigatorias: " +
+        raise ValueError("Missing required keys: " +
                          ", ".join(sorted(missing)))
     return config
 
 
 def make_generator(config: dict[str, str]) -> MazeGenerator:
-    """Convert config strings to validated generator settings."""
+    """Convert config text to validated generator settings."""
     try:
         width = int(config["WIDTH"])
         height = int(config["HEIGHT"])
         seed = int(config["SEED"]) if "SEED" in config else None
     except ValueError as error:
-        raise ValueError("WIDTH, HEIGHT e SEED devem ser inteiros") from error
+        raise ValueError("WIDTH, HEIGHT and SEED must be integers") from error
     if config["PERFECT"] not in ("True", "False"):
-        raise ValueError("PERFECT deve ser True ou False")
+        raise ValueError("PERFECT must be True or False")
     return MazeGenerator(width, height, parse_point(config["ENTRY"], "ENTRY"),
                          parse_point(config["EXIT"], "EXIT"), seed,
                          config["PERFECT"] == "True")

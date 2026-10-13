@@ -9,7 +9,6 @@ Point = tuple[int, int]
 COLORS = ("\033[38;2;230;234;241m", "\033[38;2;245;115;125m",
           "\033[38;2;120;175;255m", "\033[38;2;240;145;210m")
 RESET = "\033[0m"
-# Junctions use the same N/E/S/W bits as the maze walls.
 GLYPHS = " ╹╺┗╻┃┏┣╸┛━┻┓┫┳╋"
 HIGHLIGHTS = ("\033[38;2;250;252;255m", "\033[38;2;255;205;210m",
               "\033[38;2;203;224;255m", "\033[38;2;255;211;243m")
@@ -19,7 +18,7 @@ EXIT_COLOR = "\033[38;2;255;90;90m"
 
 def render(maze: MazeGenerator, solution: list[Point],
            show_path: bool, color: int) -> str:
-    """Draw firm walls and light circles for the route and 42 cells."""
+    """Draw walls and light circles for the route and 42 cells."""
     terminal = (sys.stdout.isatty()
                 and os.environ.get("TERM") not in ("dumb", "unknown")
                 and "NO_COLOR" not in os.environ)
@@ -42,7 +41,6 @@ def render(maze: MazeGenerator, solution: list[Point],
 
     for y in range(maze.height):
         for x in range(maze.width):
-            # Reserved cells use three circles instead of a wall box.
             if (x, y) in maze.pattern:
                 continue
             cell = maze.grid[y][x]
@@ -76,8 +74,6 @@ def render(maze: MazeGenerator, solution: list[Point],
                 "+" if mask & 5 and mask & 10 else
                 "|" if mask & 5 else "-" if mask else " ")
             if path_bits:
-                # Terminal characters are taller than they are wide:
-                # one dot every two columns keeps both directions balanced.
                 char = ("●" if unicode else ".") if column % 2 == 0 else " "
             style = HIGHLIGHTS[color] if path_bits else COLORS[color]
             if row % 2 == 1 and column % 4 in (1, 2, 3):

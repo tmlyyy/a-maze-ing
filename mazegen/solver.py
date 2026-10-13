@@ -26,7 +26,7 @@ def shortest_path(grid: list[list[int]], entry: Point,
                 parents[other] = point
                 queue.append(other)
     if exit not in parents:
-        raise ValueError("Nao existe caminho entre ENTRY e EXIT")
+        raise ValueError("No path exists between ENTRY and EXIT")
     path = []
     current: Point | None = exit
     while current is not None:

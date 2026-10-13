@@ -8,7 +8,7 @@ Point = tuple[int, int]
 
 
 def directions(path: list[Point]) -> str:
-    """Encode successive path steps as N, E, S, W."""
+    """Encode successive path steps as N, E, S, or W."""
     moves = {(0, -1): "N", (1, 0): "E", (0, 1): "S", (-1, 0): "W"}
     return "".join(moves[(bx - ax, by - ay)]
                    for (ax, ay), (bx, by) in zip(path, path[1:]))
@@ -24,4 +24,4 @@ def export_maze(path: str, maze: MazeGenerator,
         Path(path).write_text("\n".join(lines) + "\n", encoding="utf-8")
     except OSError as error:
         raise ValueError(
-            f"Nao foi possivel escrever {path}: {error}") from error
+            f"Could not write {path}: {error}") from error

@@ -1,5 +1,4 @@
-#!/usr/bin/env python3
-"""Coordinate configuration, generation, export and the terminal menu."""
+"""Coordinate configuration, generation, export, and the terminal menu."""
 
 import sys
 
@@ -14,8 +13,8 @@ def run(config_path: str) -> None:
     maze = make_generator(config)
     maze.generate()
     if not maze.pattern:
-        print("Erro: tamanho/posicao insuficiente para desenhar 42; "
-              "labirinto gerado sem o padrao.")
+        print("Error: maze too small or no valid position for the 42 "
+              "pattern; generated without it.")
     solution = maze.solve()
     export_maze(config["OUTPUT_FILE"], maze, solution)
     show_path = True
@@ -31,7 +30,6 @@ def run(config_path: str) -> None:
             print("\nAte logo!")
             return
         if choice == "1":
-            # A configured seed repeats; a new random seed gives a new maze.
             maze.seed = None
             maze.generate()
             solution = maze.solve()
@@ -49,18 +47,18 @@ def run(config_path: str) -> None:
             print("Ate logo!")
             return
         else:
-            print("Opcao invalida; escolha de 1 a 4.")
+            print("Invalid option; choose 1 to 4.")
 
 
 def main() -> int:
     """Report user-facing errors without a traceback."""
     if len(sys.argv) != 2:
-        print("Uso: python3 a_maze_ing.py config.txt", file=sys.stderr)
+        print("Usage: python3 a_maze_ing.py config.txt", file=sys.stderr)
         return 1
     try:
         run(sys.argv[1])
     except (ValueError, OSError) as error:
-        print(f"Erro: {error}", file=sys.stderr)
+        print(f"Error: {error}", file=sys.stderr)
         return 1
     return 0
 
